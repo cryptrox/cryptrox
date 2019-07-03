@@ -736,30 +736,25 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue masternodeObj(UniValue::VOBJ);
 
     CAmount blockReward = nFees + GetBlockSubsidy(pindexPrev->nHeight + 1, pindexPrev->GetBlockHeader(), consensusParams);
-    CScript payee;
-    CAmount moneysupply_toadd;
 
     std::map<COutPoint, CMasternode> mapMasternodes = mnodeman.GetFullMasternodeMap();
-        for (auto& mnpair : mapMasternodes) {
-            CMasternode mn = mnpair.second;
-            masternode_info_t infoMn;
+    std::map<COutPoint, CMasternode>::iterator mnit = mapMasternodes.begin();
+    while (mnit != mapMasternodes.end()) {
+        if (mnit->second.IsEnabled())
+        {
+            CScript payee = GetScriptForDestination(mnit->second.pubKeyCollateralAddress.GetID());
+            CTxDestination address1;
+            ExtractDestination(payee, address1);
+            std::string address2 = EncodeDestination(address1);
+            masternodeObj.pushKV("payee", address2);
+            masternodeObj.pushKV("script", mnit->second.vin.prevout.ToStringShort());
+            CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight + 1, blockReward);
+            masternodeObj.pushKV("amount", masternodePayment);
 
-            bool fFound = mnodeman.GetMasternodeInfo(mnpair.first, infoMn);
-
-            if(CMasternode::CheckCollateralForPayment(mn.vin.prevout))
-            {
-                payee = GetScriptForDestination(infoMn.pubKeyCollateralAddress.GetID());
-                CTxDestination address1;
-                ExtractDestination(payee, address1);
-                std::string address2 = EncodeDestination(address1);
-                masternodeObj.pushKV("payee", address2);
-                masternodeObj.pushKV("script", mn.vin.prevout.ToStringShort());
-                CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight + 1, blockReward);
-                masternodeObj.pushKV("amount", masternodePayment);
-
-                masternodeArr.push_back(masternodeObj);
-            }
+            masternodeArr.push_back(masternodeObj);
         }
+        ++mnit;
+    }
     result.pushKV("masternode", masternodeArr);
     result.pushKV("masternode_payments_started", pindexPrev->nHeight + 1 > consensusParams.nMasternodePaymentsStartBlock);
     result.pushKV("masternode_payments_enforced", true);

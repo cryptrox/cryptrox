@@ -68,34 +68,29 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int nBlockH
     // make sure it's not filled yet
     txoutMasternodeRet = CTxOut();
 
-    CScript payee;
-
     // GET MASTERNODE PAYMENT VARIABLES SETUP
     CAmount masternodePayment = GetMasternodePayment(nBlockHeight, blockReward);
 
     std::map<COutPoint, CMasternode> mapMasternodes = mnodeman.GetFullMasternodeMap();
-        for (auto& mnpair : mapMasternodes) {
-            CMasternode mn = mnpair.second;
-            masternode_info_t infoMn;
+    std::map<COutPoint, CMasternode>::iterator mnit = mapMasternodes.begin();
+    while (mnit != mapMasternodes.end()) {
+        if (mnit->second.IsEnabled())
+        {
+            CScript payee = GetScriptForDestination(mnit->second.pubKeyCollateralAddress.GetID());
+            txoutMasternodeRet = CTxOut(masternodePayment, payee);
+            txNew.vout.push_back(txoutMasternodeRet);
 
-            bool fFound = mnodeman.GetMasternodeInfo(mnpair.first, infoMn);
-
-            if(CMasternode::CheckCollateralForPayment(mn.vin.prevout))
-            {
-                payee = GetScriptForDestination(infoMn.pubKeyCollateralAddress.GetID());
-                txoutMasternodeRet = CTxOut(masternodePayment, payee);
-                txNew.vout.push_back(txoutMasternodeRet);
-
-                CTxDestination address1;
-                ExtractDestination(payee, address1);
-                std::string address2 = EncodeDestination(address1);
-                LogPrint(BCLog::MNPAYMENTS, "CMasternodePayments::FillBlockPayee -- Masternode payment %d to %s\n", masternodePayment, address2);
-            }
-            else
-            {
-                LogPrint(BCLog::MNPAYMENTS, "CMasternodePayments::FillBlockPayee -- Masternode payment failed to %s - outpoint %s\n", masternodePayment, mn.vin.prevout.ToStringShort());
-            }
+            CTxDestination address1;
+            ExtractDestination(payee, address1);
+            std::string address2 = EncodeDestination(address1);
+            LogPrint(BCLog::MNPAYMENTS, "CMasternodePayments::FillBlockPayee -- Masternode payment %d to %s\n", masternodePayment, address2);
         }
+        else
+        {
+            LogPrint(BCLog::MNPAYMENTS, "CMasternodePayments::FillBlockPayee -- Masternode payment failed to %s - outpoint %s\n", masternodePayment, mnit->second.vin.prevout.ToStringShort());
+        }
+        ++mnit;
+    }
 }
 
 int CMasternodePayments::GetMinMasternodePaymentsProto() {

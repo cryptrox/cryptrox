@@ -1704,13 +1704,6 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
                     fClean = false; // transaction output mismatch
                 }
-
-                // CRYPTROX BEGIN
-                if (tx.vout[o].nValue == 500000 * COIN)
-                {
-                    mnodeman.Remove(out);
-                }
-                // CRYPTROX END
             }
         }
 
@@ -1734,6 +1727,43 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
+    // CRYPTROX BEGIN
+    for (unsigned int i = 0; i < block.vtx.size(); i++)
+    {
+        const CTransaction &tx = *(block.vtx[i]);
+        if (!tx.IsCoinBase())
+        {
+            for (unsigned int o = 0; o < tx.vout.size(); o++)
+            {
+                // don't need to check collateral, just remove outpoint if exist in masternode list
+                {
+                    const COutPoint outpoint(tx.GetHash(), o);
+                    mnodeman.Remove(outpoint);
+                }
+            }
+            for (unsigned int o = 0; o < tx.vin.size(); o++)
+            {
+                const COutPoint outpoint = tx.vin[o].prevout;
+                CTransactionRef prevtxref;
+                uint256 prevhash;
+                if (GetTransaction(outpoint.hash, prevtxref, Params().GetConsensus(), prevhash, true))
+                {
+                    const CTransaction &prevtx = *(prevtxref);
+                    const CTxOut txout = prevtx.vout[outpoint.n];
+                    if (txout.nValue == 500000 * COIN && txout.masternodeIP != "")
+                    {
+                        CService service(LookupNumeric(txout.masternodeIP.c_str(), Params().GetDefaultPort()));
+                        if (CAddress(service, NODE_NETWORK).IsRoutable())
+                        {
+                            CMasternode mn(service, outpoint, txout.pubKeyMN, txout.pubKeyMN, PROTOCOL_VERSION);
+                            mnodeman.Add(mn);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // CRYPTROX END
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2130,10 +2160,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             prevheights.resize(tx.vin.size());
             for (size_t j = 0; j < tx.vin.size(); j++) {
                 prevheights[j] = view.AccessCoin(tx.vin[j].prevout).nHeight;
-                // CRYPTROX BEGIN
-                const COutPoint &out = tx.vin[j].prevout;
-                mnodeman.Remove(out);
-                // CRYPTROX END
             }
 
             if (!SequenceLocks(tx, nLockTimeFlags, &prevheights, *pindex)) {
@@ -2187,12 +2213,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (mnit->second.IsEnabled())
             {
                 nNoMasternodes++;
-                ++mnit;
             }
-            else
-            {
-                mapMasternodes.erase(mnit++);
-            }
+            ++mnit;
         }
     }
 
@@ -2227,7 +2249,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                         while (!fMasternode && mnit != mapMasternodes.end()) {
                             if (tx.vout[i].scriptPubKey == GetScriptForDestination(mnit->second.pubKeyCollateralAddress.GetID()))
                             {
-                                if (CMasternode::CheckCollateralForPayment(mnit->second.vin.prevout))
+                                if (mnit->second.IsEnabled())
                                 {
                                     fMasternode = true;
 
@@ -2309,15 +2331,24 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         const CTransaction &tx = *(block.vtx[i]);
         if (!tx.IsCoinBase())
         {
+            for (unsigned int o = 0; o < tx.vin.size(); o++)
+            {
+                // don't need to check collateral, just remove outpoint if exist in masternode list
+                {
+                    const COutPoint outpoint = tx.vin[o].prevout;
+                    mnodeman.Remove(outpoint);
+                }
+            }
             for (unsigned int o = 0; o < tx.vout.size(); o++)
             {
-                if (tx.vout[o].nValue == 500000 * COIN && tx.vout[o].masternodeIP != "")
+                const COutPoint outpoint(tx.GetHash(), o);
+                const CTxOut txout = tx.vout[o];
+                if (txout.nValue == 500000 * COIN && txout.masternodeIP != "")
                 {
-                    COutPoint outpoint(tx.GetHash(), o);
-                    CService service(LookupNumeric(tx.vout[o].masternodeIP.c_str(), Params().GetDefaultPort()));
+                    CService service(LookupNumeric(txout.masternodeIP.c_str(), Params().GetDefaultPort()));
                     if (CAddress(service, NODE_NETWORK).IsRoutable())
                     {
-                        CMasternode mn(service, outpoint, tx.vout[o].pubKeyMN, tx.vout[o].pubKeyMN, PROTOCOL_VERSION);
+                        CMasternode mn(service, outpoint, txout.pubKeyMN, txout.pubKeyMN, PROTOCOL_VERSION);
                         mnodeman.Add(mn);
                     }
                 }

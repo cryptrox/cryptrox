@@ -198,20 +198,26 @@ void CMasternode::Check(bool fForce)
 
     LogPrint(BCLog::MASTERNODE, "CMasternode::Check -- Masternode %s is in %s state\n", vin.prevout.ToStringShort(), GetStateString());
 
+    // CRYPTROX BEGIN
+    // Don't need to check because masternode list is based on blockchain
     //once spent, stop doing the checks
-    if(IsOutpointSpent()) return;
+    //if(IsOutpointSpent()) return;
+    // CRYPTROX END
 
     int nHeight = 0;
     if(!fUnitTest) {
         TRY_LOCK(cs_main, lockMain);
         if(!lockMain) return;
 
-        CollateralStatus err = CheckCollateral(vin.prevout);
-        if (err == COLLATERAL_UTXO_NOT_FOUND) {
-            nActiveState = MASTERNODE_OUTPOINT_SPENT;
-            LogPrint(BCLog::MASTERNODE, "CMasternode::Check -- Failed to find Masternode UTXO, masternode=%s\n", vin.prevout.ToStringShort());
-            return;
-        }
+        // CRYPTROX BEGIN
+        // Don't need to check because masternode list is based on blockchain
+        //CollateralStatus err = CheckCollateral(vin.prevout);
+        //if (err == COLLATERAL_UTXO_NOT_FOUND) {
+        //    nActiveState = MASTERNODE_OUTPOINT_SPENT;
+        //    LogPrint(BCLog::MASTERNODE, "CMasternode::Check -- Failed to find Masternode UTXO, masternode=%s\n", vin.prevout.ToStringShort());
+        //    return;
+        //}
+        // CRYPOTROX END
 
         nHeight = chainActive.Height();
     }
