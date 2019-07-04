@@ -483,7 +483,7 @@ void BitcoinGUI::createMenuBar()
     if(walletFrame)
     {
         // CRYPTROX TODO: menu items
-        QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+        //QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
         //-//tools->addAction(openInfoAction);
         //-//tools->addAction(openRPCConsoleAction);
         //-//tools->addAction(openGraphAction);
