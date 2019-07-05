@@ -490,8 +490,11 @@ static CTransactionRef SendMoney(CWallet * const pwallet, const CTxDestination &
     CPubKey pubKeyMN;
     CKey keyMN;
     const CKeyID *keyIDMN = boost::get<CKeyID>(&masternodePayee);
-    pwallet->GetKey(*keyIDMN, keyMN);
-    pubKeyMN = keyMN.GetPubKey();
+    if (keyIDMN != nullptr)
+    {
+        pwallet->GetKey(*keyIDMN, keyMN);
+        pubKeyMN = keyMN.GetPubKey();
+    }
 
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
@@ -600,20 +603,34 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
     }
 
     std::string masternodeIP="";
-    if (!request.params[8].isNull()) {
-        CNetAddr netAddr;
-        LookupHost(request.params[8].get_str().c_str(), netAddr, false);
-        if (!netAddr.IsValid())
-            throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET, "Error: Invalid IP");
-        masternodeIP = request.params[8].get_str();
-    }
-
     CTxDestination masternodePayee;
-    if (!request.params[9].isNull()) {
+    if (!request.params[8].isNull() && request.params[9].isNull()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Missing masternode payee");
+    }
+    if (!request.params[8].isNull() && !request.params[9].isNull()) {
+        // masternode IP validation
+        CService service(LookupNumeric(request.params[8].get_str().c_str(), Params().GetDefaultPort()));
+        if (!CAddress(service, NODE_NETWORK).IsRoutable()) {
+            throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET, "Error: Invalid IP");
+        }
+        masternodeIP = request.params[8].get_str();
+
+        // masternode payee validation
+        CKey keyAddr;
+        CKeyID keyIDAddr = GetKeyForDestination(*pwallet, dest);
+        if (keyIDAddr.IsNull()) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Incorrect pay to address");
+        else if (!pwallet->GetKey(keyIDAddr, keyAddr)) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pay to address");
+
         CTxDestination masternodeDest = DecodeDestination(request.params[9].get_str());
         if (!IsValidDestination(masternodeDest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid masternode payee address");
         }
+
+        CKey keyMN;
+        CKeyID keyIDMN = GetKeyForDestination(*pwallet, masternodeDest);
+        if (keyIDMN.IsNull()) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Incorrect masternode payee address");
+        else if (!pwallet->GetKey(keyIDMN, keyMN)) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unknown masternode payee address");
+
         masternodePayee = masternodeDest;
     }
 
