@@ -14,7 +14,9 @@
 #include <QApplication>
 #include <QClipboard>
 
+#include <key_io.h>
 #include <masternode.h>
+#include <netbase.h>
 #include <validation.h>
 
 SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *parent) :
@@ -208,6 +210,46 @@ bool SendCoinsEntry::validate(interfaces::Node& node)
     if (retval && GUIUtil::isDust(node, ui->payTo->text(), ui->payAmount->value())) {
         ui->payAmount->setValid(false);
         retval = false;
+    }
+
+    // Check masternode parameters
+    if (ui->checkboxStartMasternode->isChecked()) {
+        // Reject if don't have payTo address pubkey
+        if (retval) {
+            std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+            CWallet* const pwallet = wallets[0].get();
+            CKey keyMN;
+            CKeyID keyIDMN = GetKeyForDestination(*pwallet, DecodeDestination(ui->payTo->text().toStdString()));
+            if (keyIDMN.IsNull()) retval = false;
+            else if (!pwallet->GetKey(keyIDMN, keyMN)) retval = false;
+            if (!retval) ui->payTo->setValid(false);
+        }
+
+        // Reject wrong or local IP address
+        if (retval) {
+            CService service(LookupNumeric(ui->masternodeIP->text().toStdString().c_str(), Params().GetDefaultPort()));
+            if (!CAddress(service, NODE_NETWORK).IsRoutable()) {
+                ui->masternodeIP->setValid(false);
+                retval = false;
+            }
+        }
+
+        // Reject invalid masternode payee address
+        if (retval && !model->validateAddress(ui->masternodePayee->text())) {
+            ui->masternodePayee->setValid(false);
+            retval = false;
+        }
+
+        // Reject if don't have masternode payee address pubkey
+        if (retval) {
+            std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+            CWallet* const pwallet = wallets[0].get();
+            CKey keyMN;
+            CKeyID keyIDMN = GetKeyForDestination(*pwallet, DecodeDestination(ui->masternodePayee->text().toStdString()));
+            if (keyIDMN.IsNull()) retval = false;
+            else if (!pwallet->GetKey(keyIDMN, keyMN)) retval = false;
+            if (!retval) ui->masternodePayee->setValid(false);
+        }
     }
 
     return retval;

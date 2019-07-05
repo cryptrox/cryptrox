@@ -225,12 +225,12 @@
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
       <property name="buddy">
-       <cstring>masternodeIp</cstring>
+       <cstring>masternodeIP</cstring>
       </property>
      </widget>
     </item>
     <item row="4" column="1">
-     <widget class="QLineEdit" name="masternodeIP">
+     <widget class="QValidatedLineEdit" name="masternodeIP">
       <property name="toolTip">
        <string>Enter a masternode IP address.</string>
       </property>
@@ -250,7 +250,7 @@
      </widget>
     </item>
     <item row="5" column="1">
-     <widget class="QLineEdit" name="masternodePayee">
+     <widget class="QValidatedLineEdit" name="masternodePayee">
       <property name="toolTip">
        <string>Enter a masternode payee address or leave empty if same as Pay To address.</string>
       </property>

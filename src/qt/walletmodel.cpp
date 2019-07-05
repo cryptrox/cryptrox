@@ -187,8 +187,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             CKeyID keyIDMN = GetKeyForDestination(*pwallet, DecodeDestination(rcp.masternodePayee.toStdString()));
             if (!keyIDMN.IsNull())
             {
-                pwallet->GetKey(keyIDMN, keyMN);
-                pubKeyMN = keyMN.GetPubKey();
+                if (pwallet->GetKey(keyIDMN, keyMN))
+                    pubKeyMN = keyMN.GetPubKey();
             }
             //CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
             CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount, rcp.masternodeIP.toStdString(), pubKeyMN};
