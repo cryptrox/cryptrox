@@ -262,11 +262,14 @@ void MasternodeList::updateMyNodeList(bool fForce)
     int mnid = 0;
     for (COutput& out : vPossibleCoins)
     {
-        COutPoint outpoint(out.tx->GetHash(), out.i);
-        masternodeConfig.add(std::string("mn")+std::to_string(++mnid), out.tx->tx->vout[out.i].masternodeIP, HexStr(out.tx->tx->vout[out.i].pubKeyMN), out.tx->GetHash().ToString(), std::to_string(out.i));
-        updateMyMasternodeInfo(QString::fromStdString(std::string("mn")+std::to_string(mnid)), QString::fromStdString(out.tx->tx->vout[out.i].masternodeIP), COutPoint(out.tx->GetHash(), out.i));
-        if(pwallet->IsMine(CTxIn(outpoint)) == ISMINE_SPENDABLE)
-            pwallet->LockCoin(outpoint);
+        if (out.tx->tx->vout[out.i].masternodeIP != "" && out.tx->tx->vout[out.i].pubKeyMN.IsValid())
+        {
+            COutPoint outpoint(out.tx->GetHash(), out.i);
+            masternodeConfig.add(std::string("mn")+std::to_string(++mnid), out.tx->tx->vout[out.i].masternodeIP, HexStr(out.tx->tx->vout[out.i].pubKeyMN), out.tx->GetHash().ToString(), std::to_string(out.i));
+            updateMyMasternodeInfo(QString::fromStdString(std::string("mn")+std::to_string(mnid)), QString::fromStdString(out.tx->tx->vout[out.i].masternodeIP), outpoint);
+            if(pwallet->IsMine(CTxIn(outpoint)) == ISMINE_SPENDABLE)
+                pwallet->LockCoin(outpoint);
+        }
     }
     // CRYPTROX END
     ui->tableWidgetMasternodes->setSortingEnabled(true);
