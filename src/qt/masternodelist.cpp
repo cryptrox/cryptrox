@@ -64,11 +64,11 @@ MasternodeList::MasternodeList(const PlatformStyle *platformStyle, QWidget *pare
 
     ui->tableWidgetMyMasternodes->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    QAction *startAliasAction = new QAction(tr("Start alias"), this);
-    contextMenu = new QMenu();
-    contextMenu->addAction(startAliasAction);
-    connect(ui->tableWidgetMyMasternodes, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
-    connect(startAliasAction, SIGNAL(triggered()), this, SLOT(on_startButton_clicked()));
+    //QAction *startAliasAction = new QAction(tr("Start alias"), this);
+    //contextMenu = new QMenu();
+    //contextMenu->addAction(startAliasAction);
+    //connect(ui->tableWidgetMyMasternodes, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
+    //connect(startAliasAction, SIGNAL(triggered()), this, SLOT(on_startButton_clicked()));
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
@@ -105,7 +105,7 @@ void MasternodeList::showContextMenu(const QPoint &point)
     if(item) contextMenu->exec(QCursor::pos());
 }
 
-void MasternodeList::StartAlias(std::string strAlias)
+/*void MasternodeList::StartAlias(std::string strAlias)
 {
     std::string strStatusHtml;
     strStatusHtml += "<center>Alias: " + strAlias;
@@ -135,9 +135,9 @@ void MasternodeList::StartAlias(std::string strAlias)
     msg.exec();
 
     updateMyNodeList(true);
-}
+}*/
 
-void MasternodeList::StartAll(std::string strCommand)
+/*void MasternodeList::StartAll(std::string strCommand)
 {
     int nCountSuccessful = 0;
     int nCountFailed = 0;
@@ -183,7 +183,7 @@ void MasternodeList::StartAll(std::string strCommand)
     msg.exec();
 
     updateMyNodeList(true);
-}
+}*/
 
 void MasternodeList::updateMyMasternodeInfo(QString strAlias, QString strAddr, const COutPoint& outpoint)
 {
@@ -348,7 +348,7 @@ void MasternodeList::on_filterLineEdit_textChanged(const QString &strFilterIn)
     ui->countLabel->setText(QString::fromStdString(strprintf("Please wait... %d", MASTERNODELIST_FILTER_COOLDOWN_SECONDS)));
 }
 
-void MasternodeList::on_startButton_clicked()
+/*void MasternodeList::on_startButton_clicked()
 {
     std::string strAlias;
     {
@@ -384,9 +384,9 @@ void MasternodeList::on_startButton_clicked()
     }
 
     StartAlias(strAlias);
-}
+}*/
 
-void MasternodeList::on_startAllButton_clicked()
+/*void MasternodeList::on_startAllButton_clicked()
 {
     // Display message box
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm all masternodes start"),
@@ -408,9 +408,9 @@ void MasternodeList::on_startAllButton_clicked()
     }
 
     StartAll();
-}
+}*/
 
-void MasternodeList::on_startMissingButton_clicked()
+/*void MasternodeList::on_startMissingButton_clicked()
 {
 
     if(!masternodeSync.IsMasternodeListSynced()) {
@@ -440,7 +440,7 @@ void MasternodeList::on_startMissingButton_clicked()
     }
 
     StartAll("start-missing");
-}
+}*/
 
 void MasternodeList::on_tableWidgetMyMasternodes_itemSelectionChanged()
 {

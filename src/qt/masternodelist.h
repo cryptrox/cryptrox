@@ -73,9 +73,9 @@ private:
 private Q_SLOTS:
     void showContextMenu(const QPoint &);
     void on_filterLineEdit_textChanged(const QString &strFilterIn);
-    void on_startButton_clicked();
-    void on_startAllButton_clicked();
-    void on_startMissingButton_clicked();
+    //void on_startButton_clicked();
+    //void on_startAllButton_clicked();
+    //void on_startMissingButton_clicked();
     void on_tableWidgetMyMasternodes_itemSelectionChanged();
     void on_UpdateButton_clicked();
 };
