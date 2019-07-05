@@ -1733,14 +1733,6 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         const CTransaction &tx = *(block.vtx[i]);
         if (!tx.IsCoinBase())
         {
-            for (unsigned int o = 0; o < tx.vout.size(); o++)
-            {
-                // don't need to check collateral, just remove outpoint if exist in masternode list
-                {
-                    const COutPoint outpoint(tx.GetHash(), o);
-                    mnodeman.Remove(outpoint);
-                }
-            }
             for (unsigned int o = 0; o < tx.vin.size(); o++)
             {
                 const COutPoint outpoint = tx.vin[o].prevout;
@@ -1759,6 +1751,14 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                             mnodeman.Add(mn);
                         }
                     }
+                }
+            }
+            for (unsigned int o = 0; o < tx.vout.size(); o++)
+            {
+                // don't need to check collateral, just remove outpoint if exist in masternode list
+                {
+                    const COutPoint outpoint(tx.GetHash(), o);
+                    mnodeman.Remove(outpoint);
                 }
             }
         }
@@ -2331,14 +2331,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         const CTransaction &tx = *(block.vtx[i]);
         if (!tx.IsCoinBase())
         {
-            for (unsigned int o = 0; o < tx.vin.size(); o++)
-            {
-                // don't need to check collateral, just remove outpoint if exist in masternode list
-                {
-                    const COutPoint outpoint = tx.vin[o].prevout;
-                    mnodeman.Remove(outpoint);
-                }
-            }
             for (unsigned int o = 0; o < tx.vout.size(); o++)
             {
                 const COutPoint outpoint(tx.GetHash(), o);
@@ -2351,6 +2343,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                         CMasternode mn(service, outpoint, txout.pubKeyMN, txout.pubKeyMN, PROTOCOL_VERSION);
                         mnodeman.Add(mn);
                     }
+                }
+            }
+            for (unsigned int o = 0; o < tx.vin.size(); o++)
+            {
+                // don't need to check collateral, just remove outpoint if exist in masternode list
+                {
+                    const COutPoint outpoint = tx.vin[o].prevout;
+                    mnodeman.Remove(outpoint);
                 }
             }
         }
